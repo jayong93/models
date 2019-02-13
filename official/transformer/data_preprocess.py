@@ -21,6 +21,7 @@ from __future__ import print_function
 import os
 import random
 import tarfile
+import argparse
 
 # pylint: disable=g-bad-import-order
 import six
@@ -47,9 +48,9 @@ from official.utils.flags import core as flags_core
 _TRAIN_DATA_MIN_COUNT = 4
 
 # Vocabulary constants
-_TARGET_VOCAB_SIZE = 72250  # Number of subtokens in the vocabulary list.
+_TARGET_VOCAB_SIZE = None  # Number of subtokens in the vocabulary list.
 _TARGET_THRESHOLD = 327  # Accept vocabulary if size is within this threshold
-VOCAB_FILE = "vocab.ende.%d" % _TARGET_VOCAB_SIZE
+VOCAB_FILE = "vocab"
 
 # Strings to inclue in the generated files.
 _PREFIX = "daum"
@@ -61,23 +62,31 @@ _EVAL_TAG = "dev"  # Following WMT and Tensor2Tensor conventions, in which the
 _TRAIN_SHARDS = 100
 _EVAL_SHARDS = 1
 
-_TRAIN_DATA_SOURCES = [
-    {
-        "input": "/home/cjy/GraduationProject/models/official/transformer/test_data/train.title",
-        "target": "/home/cjy/GraduationProject/models/official/transformer/test_data/train.comment",
-    },
-    {
-        "input": "/home/cjy/GraduationProject/models/official/transformer/test_data/test.title",
-        "target": "/home/cjy/GraduationProject/models/official/transformer/test_data/test.comment",
-    }
-]
+_TRAIN_DATA_SOURCES = None
 
-_EVAL_DATA_SOURCES = [
-    {
-        "input": "/home/cjy/GraduationProject/models/official/transformer/test_data/dev.title",
-        "target": "/home/cjy/GraduationProject/models/official/transformer/test_data/dev.comment",
-    }
-]
+_EVAL_DATA_SOURCES = None
+
+def set_training_args(args):
+    global _TRAIN_DATA_SOURCES, _EVAL_DATA_SOURCES, _TARGET_VOCAB_SIZE
+    _TRAIN_DATA_SOURCES = [
+        {
+            "input": os.path.join(args.input_dir, "train.title"),
+            "target": os.path.join(args.input_dir, "train.comment")
+        },
+        {
+            "input": os.path.join(args.input_dir, "test.title"),
+            "target": os.path.join(args.input_dir, "test.comment") 
+        }
+    ]
+    _EVAL_DATA_SOURCES = [
+        {
+            "input": os.path.join(args.input_dir, "dev.title"),
+            "target": os.path.join(args.input_dir,"dev.comment")
+        }
+    ]
+
+    with open(os.path.join(args.input_dir, "vocab.title"), 'r') as f:
+        _TARGET_VOCAB_SIZE = sum(1 for _ in f)
 
 ##################################################################
 ##################################################################
@@ -268,6 +277,8 @@ def make_dir(path):
 
 
 def main(unused_argv):
+  set_training_args(FLAGS)
+
   """Obtain training and evaluation data for the Transformer model."""
   make_dir(FLAGS.raw_dir)
   make_dir(FLAGS.data_dir)
@@ -315,11 +326,15 @@ def define_data_download_flags():
       name="raw_dir", short_name="rd", default="/tmp/translate_tc_raw",
       help=flags_core.help_wrap(
           "Path where the raw data will be downloaded and extracted."))
+  flags.DEFINE_string(
+      name="input_dir", short_name="id", default="/tmp/input_dir",
+      help=flags_core.help_wrap(
+          "Directory where the seperated data is stored."))
   flags.DEFINE_bool(
       name="search", default=False,
       help=flags_core.help_wrap(
-          "If set, use binary search to find the vocabulary set with size"
-          "closest to the target size (%d)." % _TARGET_VOCAB_SIZE))
+      "If set, use binary search to find the vocabulary set with size"
+          "closest to the target size."))
 
 
 if __name__ == "__main__":
