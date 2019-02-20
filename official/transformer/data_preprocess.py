@@ -45,7 +45,7 @@ from official.utils.flags import core as flags_core
 ##################################################################
 ##################################################################
 # Use pre-defined minimum count to generate subtoken vocabulary.
-_TRAIN_DATA_MIN_COUNT = 4
+_TRAIN_DATA_MIN_COUNT = 3
 
 # Vocabulary constants
 _TARGET_VOCAB_SIZE = None  # Number of subtokens in the vocabulary list.
